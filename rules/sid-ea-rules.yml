@@ -1,0 +1,46 @@
+rules:
+  - id: rag-search-no-tenant-filter
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Retrieval call has no tenant filter. Another tenant's documents can
+      reach the prompt (Sensitive Information Disclosure).
+    pattern: $STORE.search($QUERY)
+
+  - id: rag-unfiltered-retrieval-reaches-llm
+    languages: [python]
+    severity: ERROR
+    mode: taint
+    message: >-
+      Documents retrieved without a tenant filter flow into the model prompt
+      (Sensitive Information Disclosure).
+    pattern-sources:
+      - pattern: $STORE.search($QUERY)
+    pattern-sinks:
+      - pattern: llm(...)
+
+  - id: tool-refund-no-owner-check
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Refund side effect with no check that the order belongs to the calling
+      user (Excessive Agency, excessive permissions).
+    patterns:
+      - pattern: REFUNDS.append(...)
+      - pattern-inside: |
+          def $TOOL($SESSION, ...):
+              ...
+      - pattern-not-inside: |
+          def $TOOL($SESSION, ...):
+              ...
+              if $ORDER.owner != $SESSION.user_id:
+                  ...
+              ...
+
+  - id: mcp-tool-returns-whole-record
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Tool returns a whole record to the model. Sensitive fields and other
+      tenants' rows can reach the context (Sensitive Information Disclosure).
+    pattern: return dict($RECORD)

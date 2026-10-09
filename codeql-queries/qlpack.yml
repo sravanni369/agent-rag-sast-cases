@@ -1,0 +1,4 @@
+name: sravanni369/agent-rag-sast-cases
+version: 0.0.1
+dependencies:
+  codeql/python-all: "*"
